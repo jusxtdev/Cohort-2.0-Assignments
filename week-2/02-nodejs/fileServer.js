@@ -16,6 +16,63 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
+const bodyParser = require('body-parser');
 
+app.use(bodyParser.json());
+
+const port = 3000
+
+const folder = './files'
+
+function ReadDirectory(folder){
+  return new Promise((resolve) => {
+    fs.readdir(folder, (err, files) => {
+        if (err) throw err
+        resolve(files)
+    })
+  })
+}
+
+
+
+// List of files present in './files'
+app.get('/files', async (req,res) =>{
+   try {
+    const files = await ReadDirectory(folder)
+    res.status(200).json(files)
+   } catch (error) {
+    res.status(400).json({error})
+   }
+})
+
+function ReadFile(filename){
+  const filePath = path.join(folder, filename)
+  return new Promise((resolve) => {
+    fs.readFile(filePath, 'utf-8', (err, content) =>{
+      if (err) throw err
+      resolve(content)
+    })
+  })
+}
+
+// Return content of given filename
+app.get('/files/:filename', async (req,res) =>{
+  const filename = req.params.filename
+  const files = await ReadDirectory(folder)
+  
+  if (!files.includes(filename)){
+    res.status(404).json({message:'File not found'})
+  }
+
+  const content = await ReadFile(filename)
+
+  res.status(200).json({content})
+})
+
+app.use((req,res) =>{
+  res.status(404).json({message:'Not Found'})
+})
+
+app.listen(port, ()=> console.log(`App running on ${port}`))
 
 module.exports = app;

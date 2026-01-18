@@ -39,11 +39,103 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-  const express = require('express');
-  const bodyParser = require('body-parser');
+
+/*
+TODO
+x Set status codes
+x Error validation in existing routes (404 not found)
+- PUT Route
+- DELETE route
+- Query Param
+*/
+
+const express = require('express');
+const bodyParser = require('body-parser');
+
+const app = express();
+const port = 3000;
+
+app.use(bodyParser.json());
+
+
+let Todos = [];
+let nextId = 0;
+
+app.get('/todos', (req,res) => {
+  res.status(200).json(Todos)
+})
+
+app.get('/todos/:id', (req,res) => {
+  let id = req.params.id
+  let requestedTodo = Todos.filter((todo) => todo.id == id)
   
-  const app = express();
-  
-  app.use(bodyParser.json());
-  
-  module.exports = app;
+  if (requestedTodo.length === 0){
+    res.status(404).json({message:'Not Found'})
+  }
+
+  res.status(200).json(requestedTodo)
+})
+
+app.post('/todos', (req,res) => {
+  let {title, completed, description} = req.body
+
+  let newTodo = {
+    id : nextId++,
+    title,
+    completed,
+    description
+  }
+  Todos.push(newTodo)
+
+  res.status(201).json({
+    message : 'New Todo added succesfully',
+    id : newTodo.id
+  })
+})
+
+app.put('/todos/:id', (req,res) => {
+  let id = req.params.id
+  let {title, completed} = req.body
+
+  let requestedTodo = Todos.filter((todo) => todo.id == id)
+  if (requestedTodo.length === 0){
+    res.status(404).json({message:'Not Found'})
+  }
+
+  Todos.forEach((todo, index) =>{
+    if (todo.id == id){
+      Todos[index] = {
+        id,
+        title,
+        completed,
+        description : todo.description
+      }
+    }
+  })
+
+  res.status(200).json({message:'Item Updated Successfully'})
+
+})
+
+app.delete('/todos/:id', (req,res) => {
+  let id = req.params.id
+
+  let requestedTodo = Todos.filter((todo) => todo.id == id)
+  if (requestedTodo.length === 0){
+    res.status(404).json({message:'Not Found'})
+  }
+
+  Todos = Todos.filter((todo) => todo.id != id)
+  res.status(200).json({message:'Item Deleted Succesfully'})
+})
+
+app.use((req,res)=>{
+  res.status(404).json({message:'Not Found'})
+})
+
+
+app.listen(port, ()=>{
+  console.log(`App running on port : ${port}`)
+})
+
+module.exports = app;
