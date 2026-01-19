@@ -16,6 +16,39 @@ setInterval(() => {
     numberOfRequestsForUser = {};
 }, 1000)
 
+function watchRequestCount(req, res, next){
+  const userId = req.headers["user-id"]
+  if (!userId){
+    res.send('Provide User ID')
+    return
+  }
+
+  if (userId in numberOfRequestsForUser){
+    numberOfRequestsForUser[userId] = numberOfRequestsForUser[userId] + 1
+  } else {
+    numberOfRequestsForUser[userId] = 1
+  }
+
+  next()
+}
+
+function onLimitCross(req, res, next){
+  const currentUserId = req.headers["user-id"]
+  const currentUserReqCount = numberOfRequestsForUser[currentUserId]
+
+  if (currentUserReqCount >= 5){
+    res.status(404).json({
+      message : 'Limit exceeded, Try again later'
+    })
+    return
+  }
+
+  next()
+}
+
+app.use(watchRequestCount)
+app.use(onLimitCross)
+
 app.get('/user', function(req, res) {
   res.status(200).json({ name: 'john' });
 });
@@ -23,5 +56,7 @@ app.get('/user', function(req, res) {
 app.post('/user', function(req, res) {
   res.status(200).json({ msg: 'created dummy user' });
 });
+
+app.listen(3000)
 
 module.exports = app;
